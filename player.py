@@ -72,6 +72,9 @@ class RandomPlayer(Player):
             print("No valid moves available for Random AI.")
             return None
 
+
         move = random.choice(valid_moves)
         print(f"Random AI places at {move}")
         return move
+
+
