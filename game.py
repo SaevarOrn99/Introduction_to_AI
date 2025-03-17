@@ -124,20 +124,31 @@ class OthelloGame:
         return black_count, white_count
 
     def display(self):
-        """Display the current state of the board."""
-        print("  0 1 2 3 4 5 6 7")
-        print(" ----------------")
+        """Display the current state of the board with a full grid and proper alignment."""
+        # Print column headers
+        print("    ", end="")
+        for j in range(8):
+            print(f" {j} ", end=" ")
+        print()
+
+        # Print the top border
+        print("   +" + "+".join(["---" for _ in range(8)]) + "+")
+
+        # Print each row with grid lines
         for i in range(8):
-            print(f"{i}|", end="")
+            print(f" {i} |", end="")
             for j in range(8):
                 if self.board[i][j] == self.EMPTY:
-                    print(" ", end=" ")
+                    cell = " "
                 elif self.board[i][j] == self.BLACK:
-                    print("●", end=" ")
+                    cell = "●"
                 else:
-                    print("○", end=" ")
-            print("|")
-        print(" ----------------")
+                    cell = "○"
+                print(f" {cell} |", end="")
+            print()
+
+            # Print row separator
+            print("   +" + "+".join(["---" for _ in range(8)]) + "+")
 
         # Display the current score
         black_count, white_count = self.get_score()
