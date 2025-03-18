@@ -6,12 +6,13 @@ class OthelloGame:
     EMPTY = 0
     BLACK = 1
     WHITE = 2
-    DIRECTIONS = [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
+    DIRECTIONS = [(0,1), (1,1), (1,0), (1,-1), (0,-1), (-1,-1), (-1,0), (-1,1)]
+    COLUMNS = ["a","b","c","d","e","f","g","h"]
 
     def __init__(self):
-        # Initialize the 8x8 board
+        # Initialize the board (8x8 board)
         self.board = np.zeros((8, 8), dtype=int)
-        # Set up the initial configuration
+        # Set up the initial positions
         self.board[3][3] = self.WHITE
         self.board[3][4] = self.BLACK
         self.board[4][3] = self.BLACK
@@ -125,10 +126,10 @@ class OthelloGame:
 
     def display(self):
         """Display the current state of the board."""
-        print("  0 1 2 3 4 5 6 7")
+        print("  a b c d e f g h")
         print(" ----------------")
         for i in range(8):
-            print(f"{i}|", end="")
+            print(f"{i+1}|", end="")
             for j in range(8):
                 if self.board[i][j] == self.EMPTY:
                     print(" ", end=" ")
