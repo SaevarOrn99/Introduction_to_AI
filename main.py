@@ -42,7 +42,7 @@ def main():
         black_player = HumanPlayer(OthelloGame.BLACK)
         black_name = "Human"
     elif black_choice == 2:
-        sim_count = int(input("Enter number of simulations for Black AI (e.g., 1000): "))
+        sim_count = int(input("Enter number of simulations for Black AI (e.g., 100): "))
         black_player = MCTSPlayer(OthelloGame.BLACK, simulation_count=sim_count)
         black_name = f"MCTS AI ({sim_count} sims)"
     else:
