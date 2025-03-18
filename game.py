@@ -134,9 +134,9 @@ class OthelloGame:
                 if self.board[i][j] == self.EMPTY:
                     print(" ", end=" ")
                 elif self.board[i][j] == self.BLACK:
-                    print("●", end=" ")
-                else:
                     print("○", end=" ")
+                else:
+                    print("●", end=" ")
             print("|")
         print(" ----------------")
 

@@ -61,7 +61,7 @@ def main():
         white_name = "Random AI"
 
     print(f"\nGame starting: Black ({black_name}) vs White ({white_name})")
-    print("Board representation: ● = Black, ○ = White")
+    print("Board representation: ○ = Black, ● = White")
 
     # Main game loop
     while not game.is_terminal():
