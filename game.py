@@ -6,13 +6,12 @@ class OthelloGame:
     EMPTY = 0
     BLACK = 1
     WHITE = 2
-    DIRECTIONS = [(0,1), (1,1), (1,0), (1,-1), (0,-1), (-1,-1), (-1,0), (-1,1)]
-    COLUMNS = ["a","b","c","d","e","f","g","h"]
+    DIRECTIONS = [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
 
     def __init__(self):
-        # Initialize the board (8x8 board)
+        # Initialize the 8x8 board
         self.board = np.zeros((8, 8), dtype=int)
-        # Set up the initial positions
+        # Set up the initial configuration
         self.board[3][3] = self.WHITE
         self.board[3][4] = self.BLACK
         self.board[4][3] = self.BLACK
@@ -125,20 +124,31 @@ class OthelloGame:
         return black_count, white_count
 
     def display(self):
-        """Display the current state of the board."""
-        print("  a b c d e f g h")
-        print(" ----------------")
+        """Display the current state of the board with a full grid and proper alignment."""
+        # Print column headers (A-H)
+        print("    ", end="")
+        for j in range(8):
+            print(f" {chr(65 + j)} ", end=" ")
+        print()
+
+        # Print the top border (solid line)
+        print("   +" + "+".join(["───" for _ in range(8)]) + "+")
+
+        # Print each row with grid lines
         for i in range(8):
-            print(f"{i+1}|", end="")
+            print(f" {i + 1} │", end="")  # Row numbers start from 1 instead of 0
             for j in range(8):
                 if self.board[i][j] == self.EMPTY:
-                    print(" ", end=" ")
+                    cell = " "
                 elif self.board[i][j] == self.BLACK:
-                    print("○", end=" ")
+                    cell = "●"
                 else:
-                    print("●", end=" ")
-            print("|")
-        print(" ----------------")
+                    cell = "○"
+                print(f" {cell} │", end="")  # Vertical solid line
+            print()
+
+            # Print row separator (solid line)
+            print("   +" + "+".join(["───" for _ in range(8)]) + "+")
 
         # Display the current score
         black_count, white_count = self.get_score()

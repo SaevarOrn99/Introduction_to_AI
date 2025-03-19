@@ -1,0 +1,68 @@
+Index: game.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import numpy as np\n\n\nclass OthelloGame:\n    # Game constants\n    EMPTY = 0\n    BLACK = 1\n    WHITE = 2\n    DIRECTIONS = [(0,1), (1,1), (1,0), (1,-1), (0,-1), (-1,-1), (-1,0), (-1,1)]\n    COLUMNS = [\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"h\"]\n\n    def __init__(self):\n        # Initialize the board (8x8 board)\n        self.board = np.zeros((8, 8), dtype=int)\n        # Set up the initial positions\n        self.board[3][3] = self.WHITE\n        self.board[3][4] = self.BLACK\n        self.board[4][3] = self.BLACK\n        self.board[4][4] = self.WHITE\n\n        # Black moves first\n        self.current_player = self.BLACK\n\n        # Keep track of the game history\n        self.history = []\n\n    def get_valid_moves(self):\n        \"\"\"Returns all valid moves for the current player.\"\"\"\n        valid_moves = []\n        for i in range(8):\n            for j in range(8):\n                if self.is_valid_move(i, j):\n                    valid_moves.append((i, j))\n        return valid_moves\n\n    def is_valid_move(self, x, y):\n        \"\"\"Check if a move at position (x, y) is valid for the current player.\"\"\"\n        # Check if the position is empty\n        if self.board[x][y] != self.EMPTY:\n            return False\n\n        opponent = self.WHITE if self.current_player == self.BLACK else self.BLACK\n\n        # Check in all directions\n        for dx, dy in self.DIRECTIONS:\n            nx, ny = x + dx, y + dy\n\n            # Make sure we're not out of bounds and we're looking at an opponent's piece\n            if 0 <= nx < 8 and 0 <= ny < 8 and self.board[nx][ny] == opponent:\n                # Continue in this direction\n                nx, ny = nx + dx, ny + dy\n                while 0 <= nx < 8 and 0 <= ny < 8 and self.board[nx][ny] == opponent:\n                    nx, ny = nx + dx, ny + dy\n\n                # If we found one of our own pieces, this is a valid move\n                if 0 <= nx < 8 and 0 <= ny < 8 and self.board[nx][ny] == self.current_player:\n                    return True\n\n        return False\n\n    def make_move(self, x, y):\n        \"\"\"Make a move at position (x, y) for the current player.\"\"\"\n        if not self.is_valid_move(x, y):\n            return False\n\n        # Save current state for history\n        self.history.append((np.copy(self.board), self.current_player))\n\n        # Place the piece\n        self.board[x][y] = self.current_player\n        opponent = self.WHITE if self.current_player == self.BLACK else self.BLACK\n\n        # Flip pieces in all directions\n        for dx, dy in self.DIRECTIONS:\n            # Pieces to flip in this direction\n            to_flip = []\n            nx, ny = x + dx, y + dy\n\n            # Collect pieces to flip\n            while 0 <= nx < 8 and 0 <= ny < 8 and self.board[nx][ny] == opponent:\n                to_flip.append((nx, ny))\n                nx, ny = nx + dx, ny + dy\n\n            # If we found one of our own pieces, flip all the pieces in between\n            if 0 <= nx < 8 and 0 <= ny < 8 and self.board[nx][ny] == self.current_player:\n                for fx, fy in to_flip:\n                    self.board[fx][fy] = self.current_player\n\n        # Switch to the other player\n        self.current_player = opponent\n\n        # If the opponent has no valid moves, switch back to the current player\n        if not self.get_valid_moves():\n            self.current_player = self.BLACK if self.current_player == self.WHITE else self.WHITE\n\n            # If the current player also has no valid moves, the game is over\n            if not self.get_valid_moves():\n                self.current_player = None  # Game over\n\n        return True\n\n    def is_terminal(self):\n        \"\"\"Check if the game is over.\"\"\"\n        return self.current_player is None\n\n    def get_winner(self):\n        \"\"\"Return the winner of the game or None if it's a draw.\"\"\"\n        if not self.is_terminal():\n            return None\n\n        black_count = np.count_nonzero(self.board == self.BLACK)\n        white_count = np.count_nonzero(self.board == self.WHITE)\n\n        if black_count > white_count:\n            return self.BLACK\n        elif white_count > black_count:\n            return self.WHITE\n        else:\n            return self.EMPTY  # Draw\n\n    def get_score(self):\n        \"\"\"Return the current score (black_count, white_count).\"\"\"\n        black_count = np.count_nonzero(self.board == self.BLACK)\n        white_count = np.count_nonzero(self.board == self.WHITE)\n        return black_count, white_count\n\n    def display(self):\n        \"\"\"Display the current state of the board.\"\"\"\n        print(\"  a b c d e f g h\")\n        print(\" ----------------\")\n        for i in range(8):\n            print(f\"{i+1}|\", end=\"\")\n            for j in range(8):\n                if self.board[i][j] == self.EMPTY:\n                    print(\" \", end=\" \")\n                elif self.board[i][j] == self.BLACK:\n                    print(\"○\", end=\" \")\n                else:\n                    print(\"●\", end=\" \")\n            print(\"|\")\n        print(\" ----------------\")\n\n        # Display the current score\n        black_count, white_count = self.get_score()\n        print(f\"Black: {black_count}, White: {white_count}\")\n\n    def clone(self):\n        \"\"\"Create a deep copy of the game state.\"\"\"\n        new_game = OthelloGame.__new__(OthelloGame)\n        new_game.board = np.copy(self.board)\n        new_game.current_player = self.current_player\n        new_game.history = [(np.copy(b), p) for b, p in self.history]\n        return new_game
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/game.py b/game.py
+--- a/game.py	(revision 8af167fadda9d040e3efa5332b029d2f3334db9a)
++++ b/game.py	(date 1742410184796)
+@@ -6,13 +6,12 @@
+     EMPTY = 0
+     BLACK = 1
+     WHITE = 2
+-    DIRECTIONS = [(0,1), (1,1), (1,0), (1,-1), (0,-1), (-1,-1), (-1,0), (-1,1)]
+-    COLUMNS = ["a","b","c","d","e","f","g","h"]
++    DIRECTIONS = [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
+ 
+     def __init__(self):
+-        # Initialize the board (8x8 board)
++        # Initialize the 8x8 board
+         self.board = np.zeros((8, 8), dtype=int)
+-        # Set up the initial positions
++        # Set up the initial configuration
+         self.board[3][3] = self.WHITE
+         self.board[3][4] = self.BLACK
+         self.board[4][3] = self.BLACK
+@@ -125,20 +124,31 @@
+         return black_count, white_count
+ 
+     def display(self):
+-        """Display the current state of the board."""
+-        print("  a b c d e f g h")
+-        print(" ----------------")
++        """Display the current state of the board with a full grid and proper alignment."""
++        # Print column headers (A-H)
++        print("    ", end="")
++        for j in range(8):
++            print(f" {chr(65 + j)} ", end=" ")
++        print()
++
++        # Print the top border (solid line)
++        print("   +" + "+".join(["───" for _ in range(8)]) + "+")
++
++        # Print each row with grid lines
+         for i in range(8):
+-            print(f"{i+1}|", end="")
++            print(f" {i + 1} │", end="")  # Row numbers start from 1 instead of 0
+             for j in range(8):
+                 if self.board[i][j] == self.EMPTY:
+-                    print(" ", end=" ")
++                    cell = " "
+                 elif self.board[i][j] == self.BLACK:
+-                    print("○", end=" ")
++                    cell = "●"
+                 else:
+-                    print("●", end=" ")
+-            print("|")
+-        print(" ----------------")
++                    cell = "○"
++                print(f" {cell} │", end="")  # Vertical solid line
++            print()
++
++            # Print row separator (solid line)
++            print("   +" + "+".join(["───" for _ in range(8)]) + "+")
+ 
+         # Display the current score
+         black_count, white_count = self.get_score()
