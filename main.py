@@ -4,10 +4,10 @@ import time
 
 
 def main():
-    # 创建新游戏实例
+    # Create new game instance
     game = OthelloGame()
 
-    # 创建玩家
+    # Player selection
     print("=== OTHELLO GAME ===")
     print("Select player type for Black:")
     print("1. Human")
@@ -37,7 +37,7 @@ def main():
         except ValueError:
             print("Please enter a valid number.")
 
-    # 根据选择创建玩家
+    # Create players based on choices
     if black_choice == 1:
         black_player = HumanPlayer(OthelloGame.BLACK)
         black_name = "Human"
@@ -62,7 +62,7 @@ def main():
         white_player = RandomPlayer(OthelloGame.WHITE)
         white_name = "Random AI"
 
-    # AI对战时检查，但不显示优势信息
+    # AI battle info
     if black_choice == 2 and white_choice == 2:
         black_sims = black_player.simulation_count
         white_sims = white_player.simulation_count
@@ -71,13 +71,10 @@ def main():
     print(f"\nGame starting: Black ({black_name}) vs White ({white_name})")
     print("Board representation: ○ = Black, ● = White")
 
-    # 为先进策略添加游戏记录追踪
-    move_history = []
-
-    # 主游戏循环
-    move_count = 0  # 跟踪移动次数
-    turn_count = 1  # 跟踪回合数
-    no_moves_count = 0  # 跟踪连续无移动次数
+    # Game loop
+    move_count = 0
+    turn_count = 1
+    no_moves_count = 0
 
     while not game.is_terminal():
         game.display()
@@ -93,42 +90,38 @@ def main():
 
         print(f"\nTurn {turn_count}: {player_name}'s turn ({player_display_name})")
 
-        # AI移动之间的轻微延迟
+        # Add slight delay between AI moves
         if ((black_choice != 1 and game.current_player == OthelloGame.BLACK) or
                 (white_choice != 1 and game.current_player == OthelloGame.WHITE)):
             time.sleep(0.5)
 
         move = current_player.get_move(game)
         if move:
-            # 记录这个移动
-            if isinstance(current_player, MCTSPlayer):
-                move_history.append((player_name, move))
-
             success = game.make_move(*move)
             if success:
                 move_count += 1
                 if game.current_player == OthelloGame.BLACK:
-                    turn_count += 1  # 每次轮到黑棋时增加回合数
+                    turn_count += 1  # Increment turn counter when it's Black's turn again
                 no_moves_count = 0
             else:
                 print(f"ERROR: Failed to make move at {move}")
                 no_moves_count += 1
         else:
-            # 无有效移动
+            # No valid moves
             print(f"{player_name} has no valid moves. Passing to next player.")
             no_moves_count += 1
 
-            # 手动切换玩家
+            # Switch player manually
             if game.current_player is not None:
                 game.current_player = OthelloGame.WHITE if game.current_player == OthelloGame.BLACK else OthelloGame.BLACK
                 if game.current_player == OthelloGame.BLACK:
-                    turn_count += 1  # 每次轮到黑棋时增加回合数
+                    turn_count += 1
 
-                # 如果另一个玩家也没有有效移动，游戏结束
+                # End game if other player also has no moves
                 if not game.get_valid_moves():
                     game.current_player = None
 
-        # 安全检查
+        # Safety checks
         if no_moves_count >= 4:
             print("WARNING: Multiple consecutive no-move turns detected. Ending game.")
             break
@@ -137,7 +130,7 @@ def main():
             print("WARNING: Unusually high number of moves. Ending game.")
             break
 
-    # 显示最终状态和胜者
+    # Show final state and winner
     print("\n=== GAME OVER ===")
     print(f"Total turns: {turn_count}")
     game.display()
@@ -152,7 +145,6 @@ def main():
     else:
         print("It's a draw!")
 
-    # 打印最终得分
     print(f"Final score - Black: {black_count}, White: {white_count}")
 
 

@@ -22,7 +22,7 @@ class HumanPlayer(Player):
             print("No valid moves available.")
             return None
 
-        # 用人类可读格式显示有效移动
+        # Show valid moves in human-readable format
         human_readable_moves = [(row + 1, chr(97 + col)) for row, col in valid_moves]
         print("Valid moves:", human_readable_moves)
 
@@ -32,7 +32,7 @@ class HumanPlayer(Player):
                 col_input = input("Enter column (a-h): ").lower()
 
                 if col_input in self.COLUMNS:
-                    row = row_input - 1  # 转换为0索引
+                    row = row_input - 1  # Convert to 0-based indexing
                     col = self.COLUMNS[col_input]
 
                     if 0 <= row < 8 and 0 <= col < 8 and (row, col) in valid_moves:
@@ -46,7 +46,7 @@ class HumanPlayer(Player):
 
 
 class MCTSPlayer(Player):
-    # 存储所有MCTS玩家的模拟次数，让他们互相知道对方的能力
+    # Store simulation counts for all MCTS players
     AI_SIMULATION_COUNTS = {}
 
     def __init__(self, color, exploration_weight=0.5, simulation_count=1000, time_limit=None):
@@ -56,14 +56,14 @@ class MCTSPlayer(Player):
         self.simulation_count = simulation_count
         self.time_limit = time_limit
 
-        # 记录这个AI的模拟次数
+        # Record this AI's simulation count
         MCTSPlayer.AI_SIMULATION_COUNTS[color] = simulation_count
 
-        # 找出对手的模拟次数
+        # Get opponent's simulation count
         opponent_color = 2 if color == 1 else 1  # 1=BLACK, 2=WHITE
         opponent_sim_count = MCTSPlayer.AI_SIMULATION_COUNTS.get(opponent_color)
 
-        # 创建MCTS实例，告诉它对手的模拟次数
+        # Create MCTS instance with opponent info
         self.mcts = MCTS(exploration_weight, simulation_count, time_limit, opponent_sim_count)
 
     def get_move(self, game):
@@ -74,16 +74,16 @@ class MCTSPlayer(Player):
             print("No valid moves available for AI.")
             return None
 
-        # 确保MCTS知道对手的最新模拟次数
+        # Update opponent's simulation count
         opponent_color = 2 if self.color == 1 else 1
         self.mcts.opponent_sim_count = MCTSPlayer.AI_SIMULATION_COUNTS.get(opponent_color)
 
-        # 只显示简单信息
-        print(f"AI is thinking... (running {self.simulation_count} simulations)")
+        # Simple thinking message
+        print(f"AI is thinking... ({self.simulation_count} simulations)")
 
         move = self.mcts.get_move(game)
 
-        # 转换为人类可读格式
+        # Convert to human-readable format
         if move:
             row, col = move
             human_readable_move = (row + 1, chr(97 + col))
@@ -107,7 +107,7 @@ class RandomPlayer(Player):
 
         move = random.choice(valid_moves)
 
-        # 转换为人类可读格式
+        # Convert to human-readable format
         row, col = move
         human_readable_move = (row + 1, chr(97 + col))
         print(f"Random AI places at {human_readable_move}")

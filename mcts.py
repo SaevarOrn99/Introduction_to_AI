@@ -43,7 +43,7 @@ class MCTS:
         self.time_limit = time_limit
         self.opponent_sim_count = opponent_sim_count
 
-        # 棋盘位置权重
+        # Board position weights
         self.position_weights = [
             [120, -20, 20, 5, 5, 20, -20, 120],
             [-20, -40, -5, -5, -5, -5, -40, -20],
@@ -55,36 +55,34 @@ class MCTS:
             [120, -20, 20, 5, 5, 20, -20, 120]
         ]
 
-        # 关键位置集合
+        # Key position sets
         self.corners = [(0, 0), (0, 7), (7, 0), (7, 7)]
         self.x_squares = [(1, 1), (1, 6), (6, 1), (6, 6)]
         self.c_squares = [(0, 1), (1, 0), (0, 6), (6, 0), (1, 7), (7, 1), (6, 7), (7, 6)]
 
     def get_move(self, game):
-        """获取MCTS认为最佳的移动"""
-        # 获取有效移动
+        """Get the best move according to MCTS"""
+        # Get valid moves
         valid_moves = game.get_valid_moves()
         if len(valid_moves) <= 1:
             return valid_moves[0] if valid_moves else None
 
-        # 关键策略：如果能直接占领角落，立即执行
+        # If a corner is available, take it immediately
         for corner in self.corners:
             if corner in valid_moves:
                 return corner
 
-        # 关键策略：避免X位置（角落旁的对角线位置）
+        # Avoid dangerous positions when having simulation advantage
         if self.has_simulation_advantage():
             safe_moves = [move for move in valid_moves if move not in self.x_squares]
             if safe_moves and len(safe_moves) < len(valid_moves):
                 valid_moves = safe_moves
 
-            # 避免给对手提供角落的机会
+            # Avoid giving opponent access to corners
             no_corner_setup = []
             for move in valid_moves:
-                # 模拟这个移动
                 sim_game = game.clone()
                 sim_game.make_move(*move)
-                # 检查下一步对手是否能占领角落
                 opponent_moves = sim_game.get_valid_moves()
                 if not any(corner in opponent_moves for corner in self.corners):
                     no_corner_setup.append(move)
@@ -92,49 +90,43 @@ class MCTS:
             if no_corner_setup and len(no_corner_setup) < len(valid_moves):
                 valid_moves = no_corner_setup
 
-        # 创建根节点
+        # Create root node
         root = Node(game.clone())
         root.visits = 1
 
-        # 运行MCTS
+        # Run MCTS
         if self.time_limit:
             end_time = time.time() + self.time_limit
             simulations = 0
             while time.time() < end_time:
                 self._simulate(root)
                 simulations += 1
-            print(f"Performed {simulations} simulations")
         else:
             for _ in range(self.simulation_count):
                 self._simulate(root)
 
-        # 输出移动统计
+        # Print move statistics
         print("Move statistics:")
         for child in sorted(root.children, key=lambda c: c.visits, reverse=True):
             win_rate = child.wins / child.visits if child.visits > 0 else 0
-            position_score = self.position_weights[child.action[0]][child.action[1]]
             move_row, move_col = child.action
             human_readable = (move_row + 1, chr(97 + move_col))
-            print(
-                f"Move {human_readable}: {child.wins}/{child.visits} = {win_rate:.2f}, Position Score: {position_score}")
+            print(f"Move {human_readable}: {child.wins}/{child.visits} = {win_rate:.2f}")
 
-        # 决定最佳移动
+        # Determine best move
         if self.has_simulation_advantage():
-            # 有模拟优势时采用更稳健的战略
             best_move = self._select_strategic_move(valid_moves, root)
         else:
-            # 模拟次数不占优时，尽可能挑选最好的移动
             best_child = max(root.children, key=lambda c: c.visits)
             best_move = best_child.action
 
-        # 最终安全检查 - 如果选择的移动会导致对手下一步能占角，而有其他选择，则重新选择
+        # Safety check - avoid moves that give opponent corner access
         if self.has_simulation_advantage():
             sim_game = game.clone()
             sim_game.make_move(*best_move)
             opponent_valid_moves = sim_game.get_valid_moves()
 
             if any(corner in opponent_valid_moves for corner in self.corners):
-                # 找出不会让对手占角的移动
                 safer_moves = []
                 for move in valid_moves:
                     test_game = game.clone()
@@ -146,19 +138,16 @@ class MCTS:
                 if safer_moves:
                     best_move = self._get_best_positional_move(safer_moves)
 
-        # 显示最终选择
-        row, col = best_move
-        print(f"Selected best move: ({row + 1}, {chr(97 + col)})")
         return best_move
 
     def has_simulation_advantage(self):
-        """判断是否有模拟次数优势"""
+        """Check if we have simulation count advantage"""
         if self.opponent_sim_count is None:
             return True
         return self.simulation_count > self.opponent_sim_count
 
     def _get_best_positional_move(self, moves):
-        """根据位置价值选择最佳移动"""
+        """Select the best move based on position value"""
         best_score = float('-inf')
         best_move = None
 
@@ -173,40 +162,39 @@ class MCTS:
         return best_move
 
     def _select_strategic_move(self, valid_moves, root):
-        """根据战略考量选择最佳移动"""
-        # 创建移动评分字典
+        """Select the best move based on strategic considerations"""
+        # Create move scoring dictionary
         move_scores = {}
         for child in root.children:
             action = child.action
             if action in valid_moves:
-                # 基础分 = 访问次数
                 position_score = self.position_weights[action[0]][action[1]]
                 visit_score = child.visits
                 win_rate = child.wins / child.visits if child.visits > 0 else 0
 
-                # 总分 = 位置分 * 0.5 + 访问分 * 0.3 + 胜率 * 0.2
+                # Total score = position * 0.5 + visits * 0.3 + win_rate * 0.2
                 total_score = position_score * 0.5 + visit_score * 0.3 + win_rate * 100 * 0.2
                 move_scores[action] = total_score
 
-        # 如果有些有效移动没有在树中探索，为其分配默认分数
+        # Assign default scores for unexplored valid moves
         for move in valid_moves:
             if move not in move_scores:
                 move_scores[move] = self.position_weights[move[0]][move[1]] * 0.5
 
-        # 返回得分最高的移动
+        # Return highest scoring move
         return max(move_scores.items(), key=lambda x: x[1])[0]
 
     def _simulate(self, node):
-        """运行一次MCTS模拟"""
+        """Run one MCTS simulation"""
         path = [node]
         current = node
 
-        # 1. 选择
+        # 1. Selection
         while current.untried_actions == [] and current.children:
             current = current.select_child(self.exploration_weight)
             path.append(current)
 
-        # 2. 扩展
+        # 2. Expansion
         if current.untried_actions:
             action = random.choice(current.untried_actions)
             state = current.state.clone()
@@ -214,10 +202,10 @@ class MCTS:
             current = current.add_child(state, action)
             path.append(current)
 
-        # 3. 模拟
+        # 3. Simulation
         state = current.state.clone()
 
-        simulation_limit = 200  # 防止无限循环
+        simulation_limit = 200  # Prevent infinite loops
         simulation_count = 0
 
         while not state.is_terminal() and simulation_count < simulation_limit:
@@ -231,48 +219,48 @@ class MCTS:
                 else:
                     break
             else:
-                # 使用启发式随机策略
+                # Use heuristic rollout policy
                 action = self._smart_rollout_policy(state, valid_moves)
                 state.make_move(*action)
 
-        # 4. 获取模拟结果
+        # 4. Get simulation result
         winner = state.get_winner()
 
-        # 5. 反向传播
+        # 5. Backpropagation
         for node in path:
             if node.player is None:
                 continue
 
-            if winner == 0:  # 平局
+            if winner == 0:  # Draw
                 result = 0.5
-            elif winner == node.player:  # 获胜
+            elif winner == node.player:  # Win
                 result = 1.0
-            else:  # 失败
+            else:  # Loss
                 result = 0.0
 
             node.update(result)
 
     def _smart_rollout_policy(self, state, valid_moves):
-        """使用基于位置价值的启发式策略随机走子"""
-        # 关键角落位置优先
+        """Use position-weighted random selection for rollout"""
+        # Prioritize corner positions
         corner_moves = [move for move in valid_moves if move in self.corners]
         if corner_moves:
             return random.choice(corner_moves)
 
-        # 避免有害的位置
+        # Avoid harmful positions
         if self.has_simulation_advantage():
             avoid_moves = [move for move in valid_moves if move in self.x_squares]
             safe_moves = [move for move in valid_moves if move not in avoid_moves]
             if safe_moves:
                 valid_moves = safe_moves
 
-        # 使用位置权重选择
+        # Use position weights for selection
         weights = []
         for move in valid_moves:
             row, col = move
-            # 将负权重转为正数，保证所有权重为正
+            # Convert negative weights to positive
             weight = self.position_weights[row][col] + 50
             weights.append(weight)
 
-        # 按权重随机选择
+        # Weighted random choice
         return random.choices(valid_moves, weights=weights, k=1)[0]
