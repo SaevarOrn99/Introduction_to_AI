@@ -1,163 +1,191 @@
-import numpy as np
-
-
 class OthelloGame:
-    # Game constants
+    # Board constants
     EMPTY = 0
     BLACK = 1
     WHITE = 2
-    DIRECTIONS = [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
+    DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
     def __init__(self):
-        # Initialize the 8x8 board
-        self.board = np.zeros((8, 8), dtype=int)
-        # Set up the initial configuration
+        # Initialize an 8x8 board with the starting position
+        self.board = [[self.EMPTY for _ in range(8)] for _ in range(8)]
+        # Standard Othello starting position
         self.board[3][3] = self.WHITE
         self.board[3][4] = self.BLACK
         self.board[4][3] = self.BLACK
         self.board[4][4] = self.WHITE
-
-        # Black moves first
+        # Black goes first
         self.current_player = self.BLACK
+        # Keep track of the score
+        self.black_count = 2
+        self.white_count = 2
 
-        # Keep track of the game history
-        self.history = []
+    def clone(self):
+        """Create a deep copy of the game state."""
+        new_game = OthelloGame()
+        new_game.board = [row[:] for row in self.board]
+        new_game.current_player = self.current_player
+        new_game.black_count = self.black_count
+        new_game.white_count = self.white_count
+        return new_game
 
-    def get_valid_moves(self):
-        """Returns all valid moves for the current player."""
-        valid_moves = []
-        for i in range(8):
-            for j in range(8):
-                if self.is_valid_move(i, j):
-                    valid_moves.append((i, j))
-        return valid_moves
+    def is_valid_move(self, row, col):
+        """Check if a move is valid for the current player."""
+        # 检查坐标是否在棋盘范围内
+        if not (0 <= row < 8 and 0 <= col < 8):
+            return False
 
-    def is_valid_move(self, x, y):
-        """Check if a move at position (x, y) is valid for the current player."""
-        # Check if the position is empty
-        if self.board[x][y] != self.EMPTY:
+        # 检查位置是否为空
+        if self.board[row][col] != self.EMPTY:
             return False
 
         opponent = self.WHITE if self.current_player == self.BLACK else self.BLACK
 
-        # Check in all directions
-        for dx, dy in self.DIRECTIONS:
-            nx, ny = x + dx, y + dy
+        # 检查每个方向是否有夹击的可能性
+        for dr, dc in self.DIRECTIONS:
+            r, c = row + dr, col + dc
+            # 相邻的第一个棋子必须是对手的
+            if not (0 <= r < 8 and 0 <= c < 8 and self.board[r][c] == opponent):
+                continue
 
-            # Make sure we're not out of bounds and we're looking at an opponent's piece
-            if 0 <= nx < 8 and 0 <= ny < 8 and self.board[nx][ny] == opponent:
-                # Continue in this direction
-                nx, ny = nx + dx, ny + dy
-                while 0 <= nx < 8 and 0 <= ny < 8 and self.board[nx][ny] == opponent:
-                    nx, ny = nx + dx, ny + dy
+            # 继续在这个方向上移动
+            r, c = r + dr, c + dc
+            found_own = False
+            while 0 <= r < 8 and 0 <= c < 8:
+                if self.board[r][c] == self.EMPTY:
+                    # 空位置，这个方向上没有夹击
+                    break
+                if self.board[r][c] == self.current_player:
+                    # 找到了自己的棋子，可以在这个方向上夹击
+                    found_own = True
+                    break
+                # 继续寻找自己的棋子
+                r, c = r + dr, c + dc
 
-                # If we found one of our own pieces, this is a valid move
-                if 0 <= nx < 8 and 0 <= ny < 8 and self.board[nx][ny] == self.current_player:
-                    return True
+            if found_own:
+                return True
 
+        # 没有找到任何方向上的夹击
         return False
 
-    def make_move(self, x, y):
-        """Make a move at position (x, y) for the current player."""
-        if not self.is_valid_move(x, y):
+    def get_valid_moves(self):
+        """Return a list of all valid moves for the current player."""
+        if self.current_player is None:
+            return []
+
+        valid_moves = []
+        for row in range(8):
+            for col in range(8):
+                if self.is_valid_move(row, col):
+                    valid_moves.append((row, col))
+        return valid_moves
+
+    def make_move(self, row, col):
+        """Execute a move and flip captured pieces."""
+        if not self.is_valid_move(row, col):
             return False
 
-        # Save current state for history
-        self.history.append((np.copy(self.board), self.current_player))
+        # 放置棋子
+        self.board[row][col] = self.current_player
 
-        # Place the piece
-        self.board[x][y] = self.current_player
+        # 更新分数
+        if self.current_player == self.BLACK:
+            self.black_count += 1
+        else:
+            self.white_count += 1
+
+        # 识别并翻转被夹击的棋子
         opponent = self.WHITE if self.current_player == self.BLACK else self.BLACK
+        flipped_count = 0
 
-        # Flip pieces in all directions
-        for dx, dy in self.DIRECTIONS:
-            # Pieces to flip in this direction
-            to_flip = []
-            nx, ny = x + dx, y + dy
+        for dr, dc in self.DIRECTIONS:
+            pieces_to_flip = []
+            r, c = row + dr, col + dc
 
-            # Collect pieces to flip
-            while 0 <= nx < 8 and 0 <= ny < 8 and self.board[nx][ny] == opponent:
-                to_flip.append((nx, ny))
-                nx, ny = nx + dx, ny + dy
+            # 找到可以翻转的对手棋子
+            while 0 <= r < 8 and 0 <= c < 8 and self.board[r][c] == opponent:
+                pieces_to_flip.append((r, c))
+                r, c = r + dr, c + dc
 
-            # If we found one of our own pieces, flip all the pieces in between
-            if 0 <= nx < 8 and 0 <= ny < 8 and self.board[nx][ny] == self.current_player:
-                for fx, fy in to_flip:
-                    self.board[fx][fy] = self.current_player
+            # 检查是否找到了以自己的棋子结尾的有效线
+            if 0 <= r < 8 and 0 <= c < 8 and self.board[r][c] == self.current_player:
+                # 翻转中间的所有棋子
+                for flip_r, flip_c in pieces_to_flip:
+                    self.board[flip_r][flip_c] = self.current_player
+                    flipped_count += 1
 
-        # Switch to the other player
-        self.current_player = opponent
+        # 更新翻转棋子的分数
+        if self.current_player == self.BLACK:
+            self.black_count += flipped_count
+            self.white_count -= flipped_count
+        else:
+            self.white_count += flipped_count
+            self.black_count -= flipped_count
 
-        # If the opponent has no valid moves, switch back to the current player
+        # 切换到下一个玩家
+        next_player = self.BLACK if self.current_player == self.WHITE else self.WHITE
+        self.current_player = next_player
+
+        # 检查下一个玩家是否有合法移动
         if not self.get_valid_moves():
+            # 如果下一个玩家没有合法移动，切换回原始玩家
             self.current_player = self.BLACK if self.current_player == self.WHITE else self.WHITE
 
-            # If the current player also has no valid moves, the game is over
+            # 如果原始玩家也没有合法移动，游戏结束
             if not self.get_valid_moves():
-                self.current_player = None  # Game over
+                self.current_player = None  # 没有更多可能的移动
 
         return True
 
     def is_terminal(self):
         """Check if the game is over."""
-        return self.current_player is None
+        # 如果current_player为None(双方都无法移动)则游戏结束
+        if self.current_player is None:
+            return True
+
+        # 检查是否有任何一方没有棋子
+        if self.black_count == 0 or self.white_count == 0:
+            return True
+
+        # 检查是否还有空位
+        for row in range(8):
+            for col in range(8):
+                if self.board[row][col] == self.EMPTY:
+                    # 还有空位，游戏未结束
+                    return False
+
+        # 没有空位，游戏结束
+        return True
 
     def get_winner(self):
-        """Return the winner of the game or None if it's a draw."""
+        """Determine the winner."""
         if not self.is_terminal():
             return None
 
-        black_count = np.count_nonzero(self.board == self.BLACK)
-        white_count = np.count_nonzero(self.board == self.WHITE)
-
-        if black_count > white_count:
+        if self.black_count > self.white_count:
             return self.BLACK
-        elif white_count > black_count:
+        elif self.white_count > self.black_count:
             return self.WHITE
         else:
-            return self.EMPTY  # Draw
+            return 0  # 平局
 
     def get_score(self):
-        """Return the current score (black_count, white_count)."""
-        black_count = np.count_nonzero(self.board == self.BLACK)
-        white_count = np.count_nonzero(self.board == self.WHITE)
-        return black_count, white_count
+        """Return the current score."""
+        return self.black_count, self.white_count
 
     def display(self):
-        """Display the current state of the board with a full grid and proper alignment."""
-        # Print column headers (A-H)
-        print("    ", end="")
-        for j in range(8):
-            print(f" {chr(65 + j)} ", end=" ")
-        print()
-
-        # Print the top border (solid line)
-        print("   +" + "+".join(["───" for _ in range(8)]) + "+")
-
-        # Print each row with grid lines
+        """Print the current board state."""
+        print("  a b c d e f g h")
         for i in range(8):
-            print(f" {i + 1} │", end="")  # Row numbers start from 1 instead of 0
+            print(f"{i + 1} ", end="")
             for j in range(8):
                 if self.board[i][j] == self.EMPTY:
-                    cell = " "
+                    print(". ", end="")
                 elif self.board[i][j] == self.BLACK:
-                    cell = "●"
+                    print("○ ", end="")
                 else:
-                    cell = "○"
-                print(f" {cell} │", end="")  # Vertical solid line
-            print()
+                    print("● ", end="")
+            print(f" {i + 1}")
+        print("  a b c d e f g h")
 
-            # Print row separator (solid line)
-            print("   +" + "+".join(["───" for _ in range(8)]) + "+")
-
-        # Display the current score
-        black_count, white_count = self.get_score()
-        print(f"Black: {black_count}, White: {white_count}")
-
-    def clone(self):
-        """Create a deep copy of the game state."""
-        new_game = OthelloGame.__new__(OthelloGame)
-        new_game.board = np.copy(self.board)
-        new_game.current_player = self.current_player
-        new_game.history = [(np.copy(b), p) for b, p in self.history]
-        return new_game
+        # 打印当前分数
+        print(f"Black (○): {self.black_count}, White (●): {self.white_count}")
