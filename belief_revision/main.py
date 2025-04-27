@@ -65,8 +65,8 @@ def main():
     print("\nChecking entailment after expansion:")
     print(f"Does the expanded belief base entail 'The floor is slippery'? {entailment_checker.entails(expanded_belief_base._get_conjunction(), r)}")
 
-    # Demonstrate belief revision
-    print("\nDemonstrating belief revision:")
+    # Demonstrate belief revision using the Levi identity
+    print("\nDemonstrating belief revision using the Levi identity:")
     print("Revising the original belief base with 'It is not raining'...")
 
     revision = Revision(entailment_checker)
@@ -82,6 +82,36 @@ def main():
     # Check if the belief base entails "It is not raining" (Success postulate)
     print("\nChecking the Success postulate:")
     print(f"Does the revised belief base entail 'It is not raining'? {entailment_checker.entails(revised_belief_base._get_conjunction(), Not(p))}")
+
+    # Demonstrate that the revision follows the Levi identity
+    print("\nDemonstrating that revision follows the Levi identity:")
+    print("Step 1: Contract by the negation of the formula (¬¬p = p)")
+    contracted_by_not_not_p = contraction.contract(belief_base, p)
+    print("After contracting by p:")
+    print(contracted_by_not_not_p)
+
+    print("\nStep 2: Expand with the formula (¬p)")
+    expanded_with_not_p = expansion.expand(contracted_by_not_not_p, Not(p), priority=3)
+    print("After expanding with ¬p:")
+    print(expanded_with_not_p)
+
+    print("\nCompare with direct revision:")
+    print(revised_belief_base)
+
+    # Check if they are equivalent (might differ in representation but should entail the same beliefs)
+    direct_conjunction = revised_belief_base._get_conjunction()
+    levi_conjunction = expanded_with_not_p._get_conjunction()
+
+    direct_entails_levi = entailment_checker.entails(direct_conjunction, levi_conjunction)
+    levi_entails_direct = entailment_checker.entails(levi_conjunction, direct_conjunction)
+
+    print(f"\nDoes direct revision entail Levi-based revision? {direct_entails_levi}")
+    print(f"Does Levi-based revision entail direct revision? {levi_entails_direct}")
+
+    if direct_entails_levi and levi_entails_direct:
+        print("\nConfirmed: The revision operator correctly implements the Levi identity.")
+    else:
+        print("\nWarning: The revision operator might not correctly implement the Levi identity.")
 
     print("\nDemonstration complete.")
 

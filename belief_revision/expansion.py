@@ -1,6 +1,6 @@
 """
-Belief expansion for belief revision agent.
-This module implements expansion of belief base.
+Belief expansion and revision for belief revision agent.
+This module implements expansion and revision of belief base following AGM postulates.
 """
 
 from propositional_logic import And, Not
@@ -9,9 +9,10 @@ from contraction import PartialMeetContraction
 
 class Expansion:
     """
-    Implementation of belief expansion.
+    Implementation of belief expansion according to AGM theory.
 
-    Expansion adds a new formula to the belief base.
+    Expansion simply adds a new formula to the belief base without
+    checking for consistency.
     """
 
     def __init__(self, entailment_checker=None):
@@ -29,7 +30,9 @@ class Expansion:
 
     def expand(self, belief_base, formula, priority=1):
         """
-        Expand a belief base by adding a formula.
+        Expand a belief base by adding a formula without checking for consistency.
+
+        This follows the AGM expansion definition: K+A = Cn(K ∪ {A})
 
         Args:
             belief_base: The belief base to expand
@@ -75,8 +78,11 @@ class Expansion:
 
 class Revision:
     """
-    Implementation of belief revision using Levi identity:
+    Implementation of belief revision using Levi identity following AGM theory:
+
     Revision(B, A) = Expansion(Contraction(B, ¬A), A)
+
+    This approach ensures that the AGM postulates for revision are satisfied.
     """
 
     def __init__(self, entailment_checker=None):
@@ -97,7 +103,13 @@ class Revision:
 
     def revise(self, belief_base, formula, priority=1):
         """
-        Revise a belief base by incorporating a new formula.
+        Revise a belief base by incorporating a new formula using the Levi identity.
+
+        The Levi identity defines revision as:
+        K*A = (K-¬A)+A
+
+        First contract by the negation of the formula to make room for it,
+        then expand with the formula.
 
         Args:
             belief_base: The belief base to revise
@@ -107,14 +119,22 @@ class Revision:
         Returns:
             BeliefBase: A new belief base after revision
         """
-        # Levi Identity: Revision(B, A) = Expansion(Contraction(B, ¬A), A)
-
         # First, contract the belief base by the negation of the formula
         negated_formula = Not(formula)
         contracted = self.contraction.contract(belief_base, negated_formula)
 
         # Then, expand the contracted belief base with the formula
-        return self.expansion.expand(contracted, formula, priority)
+        revised = self.expansion.expand(contracted, formula, priority)
+
+        # Ensure the result is consistent (Consistency postulate)
+        if not revised.is_consistent(self.entailment_checker):
+            # If inconsistent, try a more conservative approach: retain only the new formula
+            from belief_base import BeliefBase
+            result = BeliefBase()
+            result.add(formula, priority)
+            return result
+
+        return revised
 
     def iterative_revision(self, belief_base, formulas, priorities=None):
         """
