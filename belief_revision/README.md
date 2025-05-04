@@ -128,7 +128,3 @@ This will print a summary of which AGM postulates are satisfied by the implement
 - The code is modular: logic, belief base, and GUI are separated for easy extension.
 
 ---
-
-## License
-
-This project is provided for educational and research purposes.
