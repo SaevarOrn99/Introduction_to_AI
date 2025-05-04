@@ -39,10 +39,10 @@ def main():
 
     # Check if the belief base entails "The floor is slippery"
     print("\nChecking entailment:")
-    print(f"Does the belief base entail 'The floor is slippery'? {entailment_checker.entails(belief_base._get_conjunction(), r)}")
+    print(f"Does the belief base entail r: 'The floor is slippery'? {entailment_checker.entails(belief_base._get_conjunction(), r)}")
 
     # Contract the belief base to remove "It is raining"
-    print("\nContracting the belief base to remove 'It is raining'...")
+    print("\nContracting the belief base to remove p: 'It is raining' ...")
     contraction = PartialMeetContraction(entailment_checker)
     contracted_belief_base = contraction.contract(belief_base, p)
 
@@ -51,10 +51,10 @@ def main():
 
     # Check entailment after contraction
     print("\nChecking entailment after contraction:")
-    print(f"Does the contracted belief base entail 'The floor is slippery'? {entailment_checker.entails(contracted_belief_base._get_conjunction(), r)}")
+    print(f"Does the contracted belief base entail r: 'The floor is slippery'? {entailment_checker.entails(contracted_belief_base._get_conjunction(), r)}")
 
     # Expand the contracted belief base with "The ground is wet"
-    print("\nExpanding the contracted belief base with 'The ground is wet'...")
+    print("\nExpanding the contracted belief base with q: 'The ground is wet' ...")
     expansion = Expansion(entailment_checker)
     expanded_belief_base = expansion.expand(contracted_belief_base, q, priority=1)
 
@@ -63,11 +63,11 @@ def main():
 
     # Check entailment after expansion
     print("\nChecking entailment after expansion:")
-    print(f"Does the expanded belief base entail 'The floor is slippery'? {entailment_checker.entails(expanded_belief_base._get_conjunction(), r)}")
+    print(f"Does the expanded belief base entail r: 'The floor is slippery'? {entailment_checker.entails(expanded_belief_base._get_conjunction(), r)}")
 
     # Demonstrate belief revision using the Levi identity
     print("\nDemonstrating belief revision using the Levi identity:")
-    print("Revising the original belief base with 'It is not raining'...")
+    print("Revising the original belief base with ¬p: 'It is not raining'...")
 
     revision = Revision(entailment_checker)
     revised_belief_base = revision.revise(belief_base, Not(p), priority=3)
